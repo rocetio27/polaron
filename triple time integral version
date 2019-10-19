@@ -1,0 +1,75 @@
+const = 3e-13*1e+8; %2*abs(mean(Mq(5,:)))^2*Na/v*a/(2*pi)*10^8
+h=2*pi;
+v=8e+5/2.1876912633e+6; %8e+5/2.1876912633e+6 a.u. SI/a.u. 
+eV=1/27.211385; %a.u.                                                                                                                                                  
+nm=1e-9/5.2917721092e-11; %a.u. SI/a.u.;
+a=0.4538*nm;
+Z=83;
+M=3.4702009e-25/9.10938291e-31; %SI/a.u.;
+
+
+n=4*8000*4;
+Nt=4*n+1;
+tRange=400000;
+t=linspace(0.000001,tRange,Nt);
+
+dt=t(2)-t(1);
+size(t);
+phifpp=sin(v*pi/a*t).*exp(-1i*0.0126*eV*t)./t;
+% plot(t,func)
+% hold on
+%plot(t,imag(phifpp))
+
+phifp=zeros(1,Nt);
+tic
+for i=1:Nt
+    T=linspace(0.0001,t(i),Nt);
+    dT=T(2)-T(1);
+    phifpp=sin(v*pi/a*T).*exp(-1i*0.0126*eV*T)./T;
+
+    for k=1:n
+       phifp(i)=phifp(i)+2*dT/45*(7*phifpp(4*(k-1)+1)+32*phifpp(4*(k-1)+2)+12*phifpp(4*(k-1)+3)+32*phifpp(4*(k-1)+4)+7*phifpp(4*(k-1)+5));
+    end
+end
+toc
+
+tic
+phif=zeros(1,(Nt-1)/4);
+for i=1:(Nt-1)/4
+    for k=1:i
+       phif(i)=phif(i)+2*(dt)/45*(7*phifp(4*(k-1)+1)+32*phifp(4*(k-1)+2)+12*phifp(4*(k-1)+3)+32*phifp(4*(k-1)+4)+7*phifp(4*(k-1)+5));
+    end
+end
+toc
+
+tic
+T=zeros(1,n);
+for i=1:n
+    T(i)=t(4*i+1);
+end
+toc
+
+R = 0.4*eV; % Half-Range
+phif=const*phif;
+
+phif=[0 phif];
+
+t=linspace(0,tRange,4*n+1);
+W=linspace(-R,R,n+1);
+dW=W(2)-W(1);
+tic
+G=zeros(1,n+1);
+for i=1:n+1
+    G(i)=fourier_transform(W(i),n+1,t,phif,n/4);
+end
+toc
+
+save(sprintf('1017 Nt=%g tRange=%g n=%g dt=%g.mat',Nt,tRange,n,dt))
+spectral_function = figure;
+plot(W/eV,-2*imag(G));
+% plot(W/Freqs(4,1),-2*imag(G))
+
+xlabel('\omega/eV')
+ylabel('A(\omega)')
+title(sprintf('1017 Nt=%g tRange=%g n=%g dt=%g',Nt,tRange,n,dt))
+saveas(spectral_function,sprintf('1017 Nt=%g tRange=%g n=%g dt=%g.svg',Nt,tRange,n,dt))
